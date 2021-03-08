@@ -73,36 +73,20 @@ int main(int argc, char *argv[]){
     (char *)&server.sin_addr.s_addr,
     s->h_length);
 
-    // int sequenceNums[] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    // int sendBase = sequenceNums[0];
-    // int nextSequenceNum = sendBase + 1;
+    int sequenceNums[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     ifstream file(argv[3]);
-    // long fileSize;
     char buffer[30];
-    
-    // obtain file size
-    // fseek (file , 0 , SEEK_END);
-    // fileSize = ftell (file);
-    // rewind (file);
+    char spacket[100];
 
     file.read(buffer, 30);
     packet myPacket = packet(1, 0, sizeof(buffer), buffer);
     myPacket.printContents();
-    
-    while (file.read(buffer, 30))
-    {
-        myPacket = packet(1, 0, sizeof(buffer), buffer);
-        myPacket.printContents();
+    myPacket.serialize(spacket);
+
+    if (sendto(mysocket, &spacket, sizeof(spacket), 0, (struct sockaddr *)&server, slen) < 0){
+        cout << "Client: Problem in sending payload.\n";
+        exit(0);
     }
-    cout << "error: only " << file.gcount() << " could be read";
-    
-
-    // memset (buffer, 0, sizeof(buffer));
-    // file.read(buffer, 30);
-
-    
-    
-    // firstPacket.serialize()
 
     close(mysocket);
 }

@@ -11,8 +11,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
 #define MAXLINE 1000
 
+#include "packet.cpp"
 
 using namespace std;
 
@@ -52,7 +54,6 @@ int main(int argc, char *argv[]){
             // documentation for this formula: https://stackoverflow.com/questions/7560114/random-number-c-in-some-range
             rPort = 1024 + (rand() % (65535 - 1024 + 1));
             randomPort = to_string(rPort).c_str();
-            cout << "\nThe random port chosen is " << randomPort << endl << endl;
             if (sendto(mysocket, randomPort, MAXLINE, 0, (struct sockaddr *)&client, clen) < 0){
                 cout << "Server: Error in sending random port.\n";
                 exit(0);
@@ -78,5 +79,28 @@ int main(int argc, char *argv[]){
         cout << "Server: Problem in binding (random port).\n";
         exit(0);
     }
+
+    char spacket[100];
+    char buffer[30];
+
+    if (recvfrom(mysocket, spacket, sizeof(spacket), 0, (struct sockaddr *)&client, &clen) < 0){
+        cout << "Problem in receiving spacket.\n";
+        exit(0);
+    }
+
+    packet myPacket = packet(NULL, NULL, sizeof(buffer), buffer);
+    myPacket.deserialize(spacket);
+    myPacket.printContents();
+
+    ofstream file;
+    //creates file if not there and empties contents if one already exists with the same name
+    file.open(argv[2], ofstream::trunc);
+
+    if(file.is_open()){
+        //need to convert payload (c string) to string in order to stream it to the file
+        string output(myPacket.getData());
+        file << output;
+    }
+
     close(mysocket);
 }
