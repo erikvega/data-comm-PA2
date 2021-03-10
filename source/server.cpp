@@ -90,14 +90,16 @@ int main(int argc, char *argv[]){
 
     while (loopFlag){
         memset(spacket, 0, sizeof(spacket));
-
+        
         if (recvfrom(mysocket, spacket, sizeof(spacket), 0, (struct sockaddr *)&client, &clen) > 0){
             packet *receivedPacket = new packet(0, 0, 30, spacket);
             receivedPacket->deserialize(spacket);
 
+            //storing sequence number of packets that arrived
             arrivalLog << receivedPacket->getSeqNum() << endl;
 
             switch (receivedPacket->getType()){
+                //a packet with type 2 is a data packet. append contents to data string so we can stream into file later
                 case 1: {
                     data += receivedPacket->getData();
 
@@ -113,6 +115,7 @@ int main(int argc, char *argv[]){
                     
                     break;
                 }
+                //a packet with type 3 is an eot from the client to the server. send an eot back to server and break the loop
                 case 3: {
                     packet *endConnection = new packet(2, receivedPacket->getSeqNum(), 0, NULL);
 
@@ -127,6 +130,7 @@ int main(int argc, char *argv[]){
                     loopFlag = false;
                     break;
                 }
+                //if something goes wrong we just break the loop
                 default: {
                     loopFlag = false;
                     break;
@@ -139,6 +143,7 @@ int main(int argc, char *argv[]){
         
     }
 
+    //data should hold all the contents of the file that was sent over. stream data into output file
     file << data;
     file.close();
     arrivalLog.close();
