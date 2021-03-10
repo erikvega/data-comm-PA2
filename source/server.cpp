@@ -11,8 +11,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
 #define MAXLINE 1000
 
+#include "packet.cpp"
 
 using namespace std;
 
@@ -52,7 +54,6 @@ int main(int argc, char *argv[]){
             // documentation for this formula: https://stackoverflow.com/questions/7560114/random-number-c-in-some-range
             rPort = 1024 + (rand() % (65535 - 1024 + 1));
             randomPort = to_string(rPort).c_str();
-            cout << "\nThe random port chosen is " << randomPort << endl << endl;
             if (sendto(mysocket, randomPort, MAXLINE, 0, (struct sockaddr *)&client, clen) < 0){
                 cout << "Server: Error in sending random port.\n";
                 exit(0);
@@ -78,5 +79,70 @@ int main(int argc, char *argv[]){
         cout << "Server: Problem in binding (random port).\n";
         exit(0);
     }
+
+    ofstream arrivalLog("arrival.log", ios_base::out | ios_base::trunc);
+    bool loopFlag = true;
+    char spacket[512];
+    string data;
+    ofstream file;
+    //creates file if not there and empties contents if one already exists with the same name
+    file.open(argv[2], ofstream::trunc);
+
+    while (loopFlag){
+        memset(spacket, 0, sizeof(spacket));
+
+        if (recvfrom(mysocket, spacket, sizeof(spacket), 0, (struct sockaddr *)&client, &clen) > 0){
+            packet *receivedPacket = new packet(0, 0, 30, spacket);
+            receivedPacket->deserialize(spacket);
+
+            arrivalLog << receivedPacket->getSeqNum() << endl;
+
+            switch (receivedPacket->getType()){
+                case 1: {
+                    data += receivedPacket->getData();
+
+                    packet *ack = new packet(0, receivedPacket->getSeqNum(), 0, NULL);
+
+                    memset(spacket, 0, sizeof(spacket));
+                    ack->serialize(spacket);
+
+                    if (sendto(mysocket, spacket, sizeof(spacket), 0, (struct sockaddr *) &client, clen) == -1){
+                        cout << "Error in sending ack.\n";
+                        exit(0);
+                    }
+                    
+                    break;
+                }
+                case 3: {
+                    packet *endConnection = new packet(2, receivedPacket->getSeqNum(), 0, NULL);
+
+                    memset(spacket, 0, sizeof(spacket));
+                    endConnection->serialize(spacket);
+                    
+                    if (sendto(mysocket, spacket, sizeof(spacket), 0, (struct sockaddr *) &client, clen) == -1){
+                        cout << "Error in sending ack.\n";
+                        exit(0);
+                    }
+
+                    loopFlag = false;
+                    break;
+                }
+                default: {
+                    loopFlag = false;
+                    break;
+                }
+            }
+        }else{
+            cout << "Falied to receive spacket.\n";
+            exit(0);
+        }
+        
+    }
+
+    file << data;
+    file.close();
+    arrivalLog.close();
+    
     close(mysocket);
+    return 0;
 }
