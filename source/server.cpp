@@ -140,7 +140,6 @@ int main(int argc, char *argv[]){
             cout << "Falied to receive spacket.\n";
             exit(0);
         }
-        
     }
 
     //data should hold all the contents of the file that was sent over. stream data into output file
