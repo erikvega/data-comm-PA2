@@ -138,7 +138,6 @@ int main(int argc, char *argv[]){
         if(seqNum > 7){
             seqNum = 0;
         }
-
     }
 
     //creating eot packet and appending it to the back of the vector
@@ -164,33 +163,26 @@ int main(int argc, char *argv[]){
         memset(spacket, 0, sizeof(spacket));
         char received[512];
         if (recvfrom(mysocket, spacket, sizeof(spacket), 0, (sockaddr*)&server, &slen) > 0){
-            strcpy(received, spacket);
-
             packet *receivedPacket = new packet(0, 0, 0, spacket);
             receivedPacket->deserialize(spacket);
 
-            packet *sequencePacket = new packet(0, 0, 0, received);
+            //store the the seqnum in the ack log
+            ackLog << (receivedPacket->getSeqNum()) << endl;
 
             switch (receivedPacket->getType()){
-                //a packet with type 2 means a data packet. store the the seqnum in the ack log and continue the loop
+                //a packet with type 0 is an ack for a data packet. continue the loop
                 case 0: {
-                    sequencePacket->deserialize(received);
-                    ackLog << (sequencePacket->getSeqNum()) << endl;
                     continue;
                 }
-                //a packet with type 2 means an eot from the server to the client. store the seqnum in the ack log and break the loop
+                //a packet with type 2 means an eot from the server to the client. break the loop
                 case 2: {
-                    sequencePacket->deserialize(received);
-                    ackLog << (sequencePacket->getSeqNum()) << endl;
                     break;
                 }
             }
         }else{
-            cout << "Failed to receive after sending packet." << endl;
+            cout << "Failed to receive after sending spacket.\n" << endl;
             exit(0);
         }
-
-    
     }      
     seqNumLog.close();
     ackLog.close();
