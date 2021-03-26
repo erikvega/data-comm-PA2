@@ -15,7 +15,7 @@ barbones go-back-n starter. the program serializes packets on client side, sends
 ```
 ./server 12199 output.txt
 ```
-- start the client up 
+- then start the client up 
 ```
 ./client localhost 12199 input.txt
 ```
